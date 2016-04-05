@@ -1,0 +1,43 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "User",
+    "description": "用户信息",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer"
+        },
+        "name": {
+            "type": "string"
+        },
+        "price": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true
+        },
+        "email": {
+        	"format": "email"
+        },
+        "address": {
+        	"type": "object",
+        	"properties": {
+        		"num": {
+        			"type":"integer",
+        		},
+        		"house": {
+        			"type":"string"
+        		}
+        	},
+        	"required":["num"]
+        },
+        "tags": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+        }
+    },
+    "required": ["id", "name", "price"]
+}

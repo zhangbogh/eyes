@@ -1,0 +1,84 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>umoney-stm</groupId>
+	<artifactId>umoney-stm</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<build>
+		<sourceDirectory>src</sourceDirectory>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.1</version>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<repositories>
+		<repository>
+			<id>baidu</id>
+			<name>Baidu SCM server</name>
+			<url>http://maven.scm.baidu.com:8081/nexus/content/groups/public</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>baidu_public_repo_snapshot</id>
+			<name>Baidu's repository snapshot</name>
+			<url>http://maven.scm.baidu.com:8081/nexus/content/groups/public-snapshots</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+
+		<repository>
+			<id>Baidu_Local</id>
+			<url>http://maven.scm.baidu.com:8081/nexus/content/repositories/Baidu_Local</url>
+		</repository>
+
+		<repository>
+			<id>Baidu_Local_Snapshots</id>
+			<url>http://maven.scm.baidu.com:8081/nexus/content/repositories/Baidu_Local_Snapshots</url>
+		</repository>
+	</repositories>
+
+	<dependencies>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>5.1.14</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mybatis</groupId>
+			<artifactId>mybatis</artifactId>
+			<version>3.2.8</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.everit.json</groupId>
+			<artifactId>org.everit.json.schema</artifactId>
+			<version>1.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>2.5</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct-jdk8</artifactId>
+			<version>1.0.0.Final</version>
+		</dependency>
+		<!-- <dependency> <groupId>com.jayway.jsonpath</groupId> <artifactId>json-path</artifactId> 
+			<version>2.1.0</version> </dependency> <dependency> <groupId>org.slf4j</groupId> 
+			<artifactId>slf4j-nop</artifactId> <version>1.7.13</version> </dependency> 
+			<dependency> <groupId>com.google.code.gson</groupId> <artifactId>gson</artifactId> 
+			<version>2.5</version> </dependency> <dependency> <groupId>org.mvel</groupId> 
+			<artifactId>mvel2</artifactId> <version>2.2.7.Final</version> </dependency> -->
+	</dependencies>
+</project>
