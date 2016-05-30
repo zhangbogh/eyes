@@ -85,15 +85,15 @@ public class SyncPara {
 
                 }
                 dt_level_pos[i][2] = iList.size();
-                iList.add(Integer.valueOf(s.getValue()));
+                iList.add(Integer.valueOf(s.getMvalue()));
             } else if (s.getDatatype() == DATATYPE_STRING && s.getLevel() == LEVEL_HEAP) {
                 dt_level_pos[i][0] = DATATYPE_STRING;
                 dt_level_pos[i][2] = strList.size();
-                strList.add(s.getValue());
+                strList.add(s.getMvalue());
             } else if (s.getDatatype() == DATATYPE_TEMPLATE && s.getLevel() == LEVEL_HEAP) {
                 dt_level_pos[i][0] = DATATYPE_TEMPLATE;
                 dt_level_pos[i][2] = tmpList.size();
-                tmpList.add(s.getValue());
+                tmpList.add(s.getMvalue());
             }
             i++;
         }
@@ -120,7 +120,7 @@ public class SyncPara {
             while (rs.next()) {
                 SyncParaRow r = new SyncParaRow();
                 r.setId(rs.getInt(1));
-                r.setKey(rs.getString(2));
+                r.setMkey(rs.getString(2));
                 result.add(r);
             }
         } catch (Exception ex) {
