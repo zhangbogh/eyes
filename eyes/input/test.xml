@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tns:nodes xmlns:tns="http://www.example.org/bizmonitor"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.example.org/bizmonitor ./bizmonitor.xsd ">
+	<tns:DbPort url="jdbc:mysql://cp01-rd-union003.cp01.baidu.com:8910/union4"
+		name="union" password="uniondb123" id="computedb" />
+	<tns:Mail address="yaoli@baidu.com" id="unionrd" />
+
+	<tns:ComplexDbCheck mailid="unionrd"
+		checkconditionclass="com.union.check.checker.snapcond.TuIncomeSumCheck"
+		name="APP用户收入数据汇总小于代码位维度收入数据汇总" bdid="computedb" id="29.1"
+		error="计费名媒体维度分成低于代码位维度的分成汇总" shownames="用户id,计费名id,媒体id,分成收入汇总,代码位收入汇总,差额,差额比例">
+		<tns:sql>
+			<![CDATA[
+				select customerid,cid,tcm,sum(usercpmdivide+usercpcdivide) as divide from dayappdividesttt where countdate=20151119 group by customerid,cid,tcm; 
+			]]>
+		</tns:sql>
+		<tns:sql>
+			<![CDATA[
+				select customerid,cid,tcm,sum(usercpmdivide+usercpcdivide) as divide from dayapptutmdspsttt where countdate=20151119 group by customerid,cid,tcm;
+			]]>
+		</tns:sql>
+	</tns:ComplexDbCheck>
+</tns:nodes>

@@ -1,7 +1,5 @@
 package com.baidu.umstm.stm;
 
-import com.baidu.umstm.node.Step;
-
 import java.util.HashMap;
 import java.util.List;
 

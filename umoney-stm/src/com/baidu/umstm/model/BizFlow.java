@@ -13,7 +13,7 @@ public class BizFlow {
     int curstep;
     // 当前状态
     int curstatus;
-    // 最终状态
+    // 最终状态，流程整体的状态和每个步骤的状态都不一样
     int finalstatus;
 
     public long getSerialno() {

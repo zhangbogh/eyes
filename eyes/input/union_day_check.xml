@@ -1,0 +1,517 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tns:nodes xmlns:tns="http://www.example.org/bizmonitor" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.example.org/bizmonitor ./bizmonitor.xsd ">
+	<tns:DbPort url="jdbc:mysql://cp01-rd-union003.cp01.baidu.com:8910/union4" name="union" password="uniondb123" id="computedb" />
+	<tns:FtpConn host="yf-cm-dcapp00.yf01.baidu.com" name="anonymous" password="" id="ftp"/>
+	<tns:Mail address="union-rd@baidu.com,union-qa@baidu.com" id="unionrd" />
+
+	<!-- 基础功能验证 -->
+	<tns:BasicdbCheck name="用户拥有重复域名检查" bdid="computedb" id="1" mailid="unionrd" error="以下用户的网站存在重复域名的问题，该问题会影响到检索端日志对TM字段的输出，需要高优先级处理" shownames="用户id,域名">
+		<tns:sql>
+			<![CDATA[
+				select customerid,domain from customermedium where state=1 and mediumtype=0 group by customerid,domain having count(*)>1;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验用户媒体没有通过审核，但是却拥有媒体和计费名的关系" bdid="computedb" id="2" mailid="unionrd" error="媒体状态0删除，2添加待审核，3添加拒绝" shownames="媒体tcm,状态">
+		<tns:sql>
+			<![CDATA[
+				select a.tcm,a.state from customermedium a,cnmedium b where a.state in (0,2,3) and b.tcm = a.tcm and biztype=2;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验cnmedium和cnmediumdivide的映射关系" bdid="computedb" id="2.1" mailid="unionrd" error="根据cnmedium表检查cnmediumdivide表，如果有异常数据表示计费可能异常" shownames="计费名cid,媒体tcm,媒体类型">
+		<tns:sql>
+			<!-- 排掉prodtype=10部分，后续推动PM下掉知道业务-->
+			<![CDATA[
+				select a.cid,a.tcm,a.mediumtype from cnmedium a inner join cn c on a.cid = c.cid left join cnmediumdivide b on a.tcm = b.tcm and a.cid=b.CID where c.prodtype <> 10 and b.ID is null and a.biztype=2;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验cnmedium和cnmediumchdivide的映射关系" bdid="computedb" id="2.2" mailid="unionrd" error="根据cnmediumchdivide表检查cnmedium表，如果有异常数据表示计费可能异常" shownames="计费名cid,媒体tcm,媒体类型">
+		<tns:sql>
+			<![CDATA[
+				select a.cid,a.tcm,a.mediumtype from cnmedium a right join cnmediumchdivide b on a.tcm = b.tcm and a.cid=b.CID where a.ID is null and a.biztype=2;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验cn和cnmedium的映射关系" bdid="computedb" id="2.3" mailid="unionrd" error="计费名已经删除状态的情况不应该在cnmedium中还存在数据（同时不应该在cnmediumdivide中存在）" shownames="计费名cid">
+		<tns:sql>
+			<![CDATA[
+				select a.CID from cn a,cnmedium b where a.cid=b.cid  and a.CNSTATUS=7;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验用户有搜索类计费名但没有开通搜索业务" bdid="computedb" id="3" mailid="unionrd" error="可能给用户导致错误的分成" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				select cu.customerid from customer cu,cn cn where cu.userstatus in (4,6) and substr(cu.bizstatus,1,1)=0 and cu.customerid=cn.customerid and cn.cnstatus=4 and cn.prodtype in(0,4,5,6);
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验用户有网盟类计费名但没有开通网盟业务" bdid="computedb" id="4" mailid="unionrd" error="可能给用户导致错误的分成" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				select cu.customerid from customer cu join cn cn on cu.customerid = cn.customerid left join ssp_main_user su on cu.ucid = su.user_id where cu.userstatus in (4,6) and substr(cu.bizstatus,3,1)=0 and cn.cnstatus=4 and cn.prodtype in (3) and cn.appid=1 and (su.app_id is null or su.app_id not in (320, 274));
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验用户有鸿媒体计费名但是用户没开通鸿媒体业务" bdid="computedb" id="5" mailid="unionrd" error="可能给用户导致错误的分成" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				Select  cu.customerid  from customer cu ,cn cn where cu.userstatus in (4,6) and substr(cu.bizstatus,11,1)=0 and cu.customerid=cn.customerid and cn.cnstatus=4 and cn.prodtype in (12);
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验用户有软件类计费名但没有开通软件业务" bdid="computedb" id="6" mailid="unionrd" error="可能给用户导致错误的分成" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				Select cu.customerid from customer cu ,cn cn where cu.userstatus in (4,6) and substr(cu.bizstatus,2,1)=0 and cu.customerid=cn.customerid and cn.cnstatus=4 and cn.prodtype in (1,2);
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验用户有sp类计费名但没有开通sp业务" bdid="computedb" id="7" mailid="unionrd" error="可能给用户导致错误的分成" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				Select cu.customerid from customer cu ,cn cn where cu.userstatus in (4,6) and substr(cu.bizstatus,7,1)=0 and cu.customerid=cn.customerid and cn.cnstatus=4 and cn.prodtype in (9);
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验用户有网页app类计费名但没有开通网页app业务" bdid="computedb" id="7.1" mailid="unionrd" error="可能给用户导致错误的分成" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				Select cu.customerid from customer cu ,cn cn where cu.userstatus in (4,6) and substr(cu.bizstatus,10,1)=0 and cu.customerid=cn.customerid and cn.cnstatus=4 and cn.prodtype in (11);
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验用户开通了搜索业务,但是没有搜索类型的计费名" bdid="computedb" id="8" mailid="unionrd" error="可能给用户导致错误的分成" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				select cu.customerid from customer cu where cu.userstatus in (4,6) and substr(cu.bizstatus,1,1)=1 and not exists (select 1 from cn cn where cu.customerid=cn.customerid and cn.prodtype in(0,1,2,4,5,6));
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验用户开通了网盟业务，但是没有网盟计费名" bdid="computedb" id="9" mailid="unionrd" error="可能给用户导致错误的分成" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				select cu.customerid from customer cu where cu.userstatus in (4,6) and substr(cu.bizstatus,3,1)=1 and not exists (select 1 from cn cn where cu.customerid=cn.customerid and cn.cnstatus=4 and cn.prodtype in(3));
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验用户开通了sp业务，但是没有sp计费名" bdid="computedb" id="10" mailid="unionrd" error="可能给用户导致错误的分成" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				select cu.customerid from customer cu where cu.userstatus in (4,6) and substr(cu.bizstatus,7,1)=1 and not exists (select 1 from cn cn where cu.customerid=cn.customerid and cn.cnstatus=4 and cn.prodtype in(9));
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验用户开通了鸿媒体业务，但是没有鸿媒体计费名" bdid="computedb" id="11.1" mailid="unionrd" error="可能给用户导致错误的分成" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				select cu.customerid from customer cu where cu.userstatus in (4,6) and substr(cu.bizstatus,11,1)=1 and not exists (select 1 from cn cn where cu.customerid=cn.customerid and cn.cnstatus=4 and cn.prodtype in(12));
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验用户开通了软件业务，但是没有搜霸，直达计费名" bdid="computedb" id="11.2" mailid="unionrd" error="可能给用户导致错误的分成" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				select cu.customerid from customer cu where cu.userstatus in (4,6) and substr(cu.bizstatus,2,1)=1 and not exists (select 1 from cn cn where cu.customerid=cn.customerid and cn.prodtype in(1,2,6));
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验系统中等待审核的记录数是否超过等待时间上限10天(展示100条)" bdid="computedb" id="12" mailid="unionrd" error="长期积累的审核任务，可能导致用户焦躁的情绪反馈，影响联盟声誉" shownames="审核id,实体id,用户id">
+		<tns:sql>
+			<![CDATA[
+                select  auditId,entityid,a.customerid 
+                from auditrecord a 
+                left join customer b on a.customerId=b.CUSTOMERID and b.EMAILSTATUS=1 
+                where state=2 and a.auditType<>13 and a.createtime<'#tendaysago-' and b.CUSTOMERID is not null and a.customerid<>963408 and b.modifytime<'#tendaysago-' limit 100;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验系统中等待审核的用户财务信息（一个月一审）是否超过等待时间上限30天" bdid="computedb" id="12.1" mailid="unionrd" error="长期积累的审核任务，可能导致用户焦躁的情绪反馈，影响联盟声誉" shownames="审核id,实体id,用户id">
+		<tns:sql>
+			<![CDATA[
+                select  auditId,entityid,a.customerid 
+                from auditrecord a 
+                left join customer b on a.customerId=b.CUSTOMERID and b.EMAILSTATUS=1 
+                where state=2 and a.auditType=13 and a.createtime<'#thirtydaysago-' and b.CUSTOMERID is not null;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="是否所有cnmedium都在cnmedeiumdivde表存在记录" bdid="computedb" id="13" mailid="unionrd" error="非常重要，影响用户分成，引起用户投诉为什么没有分成数据" shownames="计费名,域名">
+		<tns:sql>
+			<![CDATA[
+				select c.cname,cum.domain 
+				from cnmedium cm,cn c,customermedium cum 
+				where cm.cid=c.cid and c.prodtype=3 and cm.tcm=cum.tcm 
+				and not exists(select 1 from cnmediumdivide cmd where cmd.cid=c.cid and cmd.tcm=cum.tcm)
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检查网盟cnmedium表的tcm都在customermedium中存在" bdid="computedb" id="13.1" mailid="unionrd" error="非常重要，影响用户分成，引起用户投诉为什么没有分成数据" shownames="计费名id,媒体tcm">
+		<tns:sql>
+			<![CDATA[
+ 				select a.cid,a.tcm from cnmedium a left join customermedium b on a.tcm=b.tcm where a.biztype=2 and b.tcm is null;
+ 			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="查看企业用户支付方式是否为2" bdid="computedb" id="14" mailid="unionrd" error="企业用户的计税和个人用户不同（不用计个税），如果出错，客户可能会付出多余的税费" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				select c.customerid  from customer c,customerfininfo cfi where c.customerid=cfi.customerid and c.paytype=1 and cfi.payway!=2 and c.USERSTATUS<>6 and c.customerid not in (1034839);
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="查看个人用户支付方式是否为不为2" bdid="computedb" id="15" mailid="unionrd" error="企业用户的计税和个人用户不同（不用计个税），如果出错，客户可能会付出多余的税费" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				select c.customerid from customer c,customerfininfo cfi where c.customerid=cfi.customerid and c.paytype=0 and cfi.payway=2
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检查dayappsttt一天中resid是否只有一条记录" bdid="computedb" id="16" mailid="unionrd" error="如果超过一条记录，代表给用户产生了重复分成，公司赔钱了" shownames="资源id，日期">
+		<tns:sql>
+			<![CDATA[
+				select d.resid,d.countdate from dayappsttt d group by resid,countdate having count(resid)>1
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="查看搜索行业系数表中是否有非搜索计费名，是否都在计费名表存在" bdid="computedb" id="17" mailid="unionrd" error="数据发生混乱，需要排查原因，为什么会有非搜索的计费名在搜索额行业系数表内" shownames="计费名id">
+		<tns:sql>
+			<![CDATA[
+				select pf.cnid from profesionFactor pf where pf.cnid not in (select c.cid from cn c where c.prodtype in (0,1,2,4,5,6))
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="查看特殊合作计费名是否为SEARCH,EXPRESS,SOBAR的计费名，是否都在计费名表存在" bdid="computedb" id="18" mailid="unionrd" error="数据发生混乱，需要排查原因，为什么会有非特殊的计费名在特殊计费名表内" shownames="计费名id">
+		<tns:sql>
+			<![CDATA[
+				select sc.cid from specialcn sc where sc.cid not in (select c.cid from cn c where c.prodtype in (0,1,2))
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="查看是否为cpro的计费名，是否都在计费名表存在" bdid="computedb" id="19" mailid="unionrd" error="数据发生混乱，需要排查原因，为什么会有非网盟计费名在网盟对外导出计费名表内" shownames="计费名id">
+		<tns:sql>
+			<![CDATA[
+				select cp.cid from cproshowstyle cp where cp.cid not in (select c.cid from cn c where c.prodtype=3)
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="查看主题过滤域名是否都在计费名表存在" bdid="computedb" id="20" mailid="unionrd" error="数据发生混乱，需要排查原因，为什么会有过滤计费名不在计费名表内" shownames="计费名id">
+		<tns:sql>
+			<![CDATA[
+				select cnf.filtradecid from cnfiltradingcprourl cnf where cnf.filtradecid not in (select c.cid from cn c)
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检验每天分托管位收入文件tu汇总媒体收入小于等于该媒体的收入" bdid="computedb" id="21" mailid="unionrd" error="广告位粒度的数据汇总应该少于媒体数据的汇总，否则标示媒体数据汇总有误，需要排查" shownames="标记">
+		<tns:sql>
+			<![CDATA[
+				select 1 from daymediumincome t1 
+				where t1.countdate=DATE_FORMAT(DATE_SUB( curdate( ) , INTERVAL 1 DAY ),'%Y%m%d') and t1.consum <
+				(select sum(t2.consum) 
+				from dayadposincome t2 where t2.cid=t1.cid and t2.tm=t1.tm and t2.countdate=DATE_FORMAT(DATE_SUB( curdate( ) , INTERVAL 1 DAY ),'%Y%m%d'))
+				+
+				(select sum(t3.income) 
+				from daycbincome t3 where t3.cid=t1.cid and t3.tm=t1.tm and t3.countdate=DATE_FORMAT(DATE_SUB( curdate( ) , INTERVAL 1 DAY ),'%Y%m%d'))
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="判断用户参与联盟合作业务但没有绑定财务计费单元" bdid="computedb" id="22" mailid="unionrd" error="没有绑定财务单元会导致分账分不到用户的头上" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				select c.customerid from customer c left join customerfinpaymentinfo cf on c.customerid=cf.customerid and cf.paymentunitid=1
+				where c.userstatus in (4,6) and cf.customerid is null and (substr(c.bizstatus,1,1)='1' or substr(c.bizstatus,2,1)='1' or substr(c.bizstatus,3,1)='1' or substr(c.bizstatus,7,1)='1' ) and c.customerid not in (1038515)
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="判断用户参与鸿媒体合作业务但没有绑定财务计费单元" bdid="computedb" id="23" mailid="unionrd" error="没有绑定财务单元会导致分账分不到用户的头上" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				select c.customerid from customer c left join customerfinpaymentinfo cf on c.customerid=cf.customerid and cf.paymentunitid=3
+				where c.userstatus in (4,6) and substr(c.bizstatus,11,1)='1' and cf.customerid is null and c.customerid not in (3229, 7404, 398229, 486573, 500614, 513764, 514554, 584185, 788635, 875303, 903662, 958826)
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="判断积分兑换是否存在积分不足，但兑换成功的情况" bdid="computedb" id="24" mailid="unionrd" error="错误的积分兑换，会导致积分预算损失，积分预算属于公司财务的一部分(12年整理过一次，所以exchangeid>121125)" shownames="兑换id,已使用积分,使用积分">
+		<tns:sql>
+			<![CDATA[
+				select ex.exchangeid,ex.centsused,SUM(c.num) from exchange ex,centsusedbyexchange c where ex.exchangeid=c.exchangeid and ex.exchangeid > 121125 group by ex.exchangeid having ex.centsused<>SUM(c.num)  limit 100
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="查看首页发布公告是否有数据,保证首页的正常显示" bdid="computedb" id="24.1" mailid="unionrd" error="保证首页正常显示" shownames="发布id">
+		<tns:sql>
+			<![CDATA[
+				select p.announceid from publishedindexannouncement p having count(p.announceid)<>5
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="查看系统公告的内容是否有空值出现" bdid="computedb" id="24.2" mailid="unionrd" error="保证索引过程数据正确" shownames="公告id">
+		<tns:sql>
+			<![CDATA[
+				select b.bulletinid from bulletin b left join bulletincontent a on a.BULLETINID=b.BULLETINID where a.BULLETINID is null;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="公告发送情况检查" bdid="computedb" id="24.3" mailid="unionrd" error="未发送大于1条" shownames="标记">
+		<tns:sql>
+			<![CDATA[
+				select 1 from bulletin a left join bulletincustomer b on a.bulletinid = b.bulletinid where a.sendtype=1 and a.issent=0 and date_format(a.createtime,'%Y%m%d')!=date_format(current_date,'%Y%m%d') and (b.customerid is null or b.customerid not in (select distinct customerid from bulletinblackcustomer)) having count(*) > 1;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="搜索分渠道数据检查" bdid="computedb" id="24.4" mailid="unionrd" error="前天的搜索分渠道数据没有生成，需要尽快恢复" shownames="日期">
+		<tns:sql>
+			<![CDATA[
+				select distinct '#twodaysago' from daychannelsearchsttt a where not exists (select * from daychannelsearchsttt b where b.countdate='#twodaysago');
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检查计费名的cpm配置信息中typeid是否有不在全局中的情况" bdid="computedb" id="24.5" mailid="unionrd" error="检查计费名的cpm配置信息中typeid是否有不在全局配置中的情况" shownames="日期">
+		<tns:sql>
+			<![CDATA[
+				select d.id from dancndividefactor d where d.adtypeid not in (select adtypeid from dandividefactor);
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检查每月新增用户的分账情况" bdid="computedb" id="24.6" mailid="unionrd" error="检查新增用户是否设置了分账帐号(monthlyaccount)，每月1日错误忽略" shownames="用户ID">
+		<tns:sql>
+			<![CDATA[
+				select a.customerid from customer a where a.USERSTATUS=4 and a.candivide=1 and a.coopstartdate > #lastmonth01 and a.coopstartdate < #month01 and not exists (select b.CUSTOMERID from monthlyaccount b where a.CUSTOMERID=b.CUSTOMERID and b.MONTH=#lastmonth) having count(1) > 200;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检查每月新增用户的付款情况" bdid="computedb" id="24.6.1" mailid="unionrd" error="检查新增用户收入超过100但没有付账(monthlypay中没有记录,用户数大于200时预警)，每月1日错误忽略" shownames="用户ID">
+		<tns:sql>
+			<![CDATA[
+				select a.customerid from customer a where a.USERSTATUS=4 and a.candivide=1 and a.coopstartdate > 
+				#lastmonth01 and a.coopstartdate < #month01 and exists (select b.CUSTOMERID from monthlyaccount b where a.CUSTOMERID=b.CUSTOMERID 
+				and b.MONTH=#lastmonth and b.TOPAYAFTERTAX>100 and not exists(select c.customerid from monthlypay c where b.CUSTOMERID=c.customerid and
+				 c.month=#lastmonth)) and a.fraudkeepmoneystate = 0 and keepmoney=0 having count(1) > 200;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检查关闭了分账权限的用户时候还能获得收入" bdid="computedb" id="24.7" mailid="unionrd" error="关闭了分账权限，不应该再获得任何收入" shownames="用户id">
+		<tns:sql>
+			<![CDATA[
+				select distinct a.customerid from monthlypay a,customer b where a.month=#lastmonth and b.CANDIVIDE in(0,2) and b.closedividedate < #lastmonth- and a.CUSTOMERID=b.CUSTOMERID;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检查网盟封禁的计费名是否还有收入" bdid="computedb" id="24.8" mailid="unionrd" error="封禁了的计费名，理论上不应该再产生收入" shownames="用户id,计费名id,收入,分成">
+		<tns:sql>
+			<![CDATA[
+				select a.customerid,a.cid,a.income,a.divide from daycprosttt a where a.cid in (select cid from cn where banstatus=1 and bandate < '#twodaysago-') and a.countdate='#twodaysago' and a.divide > 0;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检查搜索封禁的计费名是否还有收入" bdid="computedb" id="24.9" mailid="unionrd" error="封禁了的计费名，理论上不应该再产生收入" shownames="用户id,计费名id,收入,分成">
+		<tns:sql>
+			<![CDATA[
+				select a.customerid,a.cid,a.income,a.divide from daysearchsttt a where a.cid in (select cid from cn where banstatus=1 and bandate < '#twodaysago-') and a.countdate='#twodaysago' and a.divide > 0;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检查SP封禁的计费名是否还有收入" bdid="computedb" id="24.10" mailid="unionrd" error="封禁了的计费名，理论上不应该再产生收入" shownames="用户id,计费名id,收入,分成">
+		<tns:sql>
+			<![CDATA[
+				select a.customerid,a.cid,a.income,a.divide from dayspsttt a where a.cid in (select cid from cn where banstatus=1 and bandate < '#twodaysago-') and a.countdate='#twodaysago' and a.divide > 0;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检查daycprosttt每天必须有分成数据" bdid="computedb" id="25" mailid="unionrd" error="cpro业务必须保证每天有数据，否则影响月末分账" shownames="丢失天数">
+		<tns:sql>
+			<![CDATA[
+				select (day(now())-1-tt.days ) as lostday from (select count(distinct countdate) as days from daycprosttt where month(countdate)=month(now())) as tt where tt.days<day(now())-1;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检查daysearchsttt每天必须有分成数据" bdid="computedb" id="25.1" mailid="unionrd" error="search业务必须保证每天有数据，否则影响月末分账" shownames="丢失天数">
+		<tns:sql>
+			<![CDATA[
+				select (day(now())-1-tt.days ) as lostday from (select count(distinct countdate) as days from daysearchsttt where month(countdate)=month(now())) as tt where tt.days<day(now())-1;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检查daysoftwaresttt每天必须有分成数据" bdid="computedb" id="25.3" mailid="unionrd" error="software业务必须保证每天有数据，否则影响月末分账" shownames="丢失天数">
+		<tns:sql>
+			<![CDATA[
+				select (day(now())-1-tt.days ) as lostday from (select count(distinct countdate) as days from daysoftwaresttt where month(countdate)=month(now())) as tt where tt.days<day(now())-1;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<!-- 老APP业务2015年已下线，不再开目校验-->
+	<!--
+    <tns:BasicdbCheck name="检查dayappsttt每天必须有分成数据" bdid="computedb" id="25.4" mailid="unionrd" error="老app业务必须保证每天有数据，否则影响月末分账" shownames="丢失天数">
+        <tns:sql>
+            <![CDATA[
+                select (day(now())-1-tt.days ) as lostday from (select count(distinct countdate) as days from dayappsttt where month(countdate)=month(now())) as tt where tt.days<day(now())-1;
+            ]]>
+        </tns:sql>
+    </tns:BasicdbCheck>
+    -->
+	<tns:BasicdbCheck name="检查daydansttt每天必须有分成数据" bdid="computedb" id="25.5" mailid="unionrd" error="dan业务必须保证每天有数据，否则影响月末分账" shownames="丢失天数">
+		<tns:sql>
+			<![CDATA[
+				select (day(now())-1-tt.days ) as lostday from (select count(distinct countdate) as days from daydansttt where month(countdate)=month(now())) as tt where tt.days<day(now())-1;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="检查daytuansttt每天必须有分成数据" bdid="computedb" id="25.4" mailid="unionrd" error="tuan业务必须保证每天有数据，否则影响月末分账" shownames="丢失天数">
+		<tns:sql>
+			<![CDATA[
+				select (day(now())-1-tt.days ) as lostday from (select count(distinct countdate) as days from daytuansttt where month(countdate)=month(now())) as tt where tt.days<day(now())-1;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+
+
+	<!-- 镜像功能验证 -->
+	<tns:SnapdbCheck mailid="unionrd" checkconditionclass="com.union.check.checker.snapcond.WebsiteQualityCheck" name="网站quality检查" filepath="./output/webquality.csv" bdid="computedb" id="25"
+					 error="网站如果质量将为1级的话，会被切成LU，影响站长收入" shownames="媒体id,质量级别">
+		<tns:sql>
+			<![CDATA[
+				select tcm,quality from customermedium where mediumtype=0 and state in (1,4);
+			]]>
+		</tns:sql>
+	</tns:SnapdbCheck>
+
+	<!-- 序列功能验证 -->
+	<tns:SequencedbCheck shownames="用户id,计费名id,日期,分成,展现,点击" mailid="unionrd" name="网盟用户每日分成监控" error="监控每个分成超过1000元的用户，如果分成的波动率超过30%，则报警" bdid="computedb" id="26">
+		<tns:sql>
+			<![CDATA[
+				select customerid,cid,countdate,divide,viewtimes,click from daycprosttt where countdate>#fourdaysago order by customerid,cid,countdate;
+			]]>
+		</tns:sql>
+		<tns:sequencekey>customerid,cid</tns:sequencekey>
+		<tns:sequencevalue>divide</tns:sequencevalue>
+		<tns:followvalue>viewtimes</tns:followvalue>
+		<!-- 比较临近两天的数据，分成超过1000，并且变化率超过30%的，并且展现量变化不跟随变化报警 -->
+		<tns:sequencetype>1</tns:sequencetype>
+	</tns:SequencedbCheck>
+	<tns:SequencedbCheck shownames="用户id,计费名id,日期,分成,展现" mailid="unionrd" name="搜索用户每日分成监控" error="监控每个分成超过1000元的用户，如果分成的波动率超过30%，则报警" bdid="computedb" id="27">
+		<tns:sql>
+			<![CDATA[
+				select customerid,cid,countdate,divide,viewtimes from daysearchsttt where countdate>#fourdaysago order by customerid,cid,countdate;
+			]]>
+		</tns:sql>
+		<tns:sequencekey>customerid,cid</tns:sequencekey>
+		<tns:sequencevalue>divide</tns:sequencevalue>
+		<tns:followvalue>viewtimes</tns:followvalue>
+		<!-- 比较两天的数据，超过1000，并且变化率超过30%的报警 -->
+		<tns:sequencetype>1</tns:sequencetype>
+	</tns:SequencedbCheck>
+	<tns:SequencedbCheck shownames="用户id,计费名id,广告类型id,日期,分成,展现" mailid="unionrd" name="鸿媒体用户每日分成监控" error="监控每个分成超过1000元的用户，如果分成的波动率超过30%，则报警" bdid="computedb" id="27.1">
+		<tns:sql>
+			<![CDATA[
+				select customerid,cid,adtypeid,countdate,divide,viewtimes from daydansttt where countdate>#fourdaysago order by customerid,cid,adtypeid,countdate;
+			]]>
+		</tns:sql>
+		<tns:sequencekey>customerid,cid</tns:sequencekey>
+		<tns:sequencevalue>divide</tns:sequencevalue>
+		<tns:followvalue>viewtimes</tns:followvalue>
+		<!-- 比较两天的数据，超过1000，并且变化率超过30%的报警 -->
+		<tns:sequencetype>1</tns:sequencetype>
+	</tns:SequencedbCheck>
+	<tns:SequencedbCheck shownames="用户id,计费名id,产品id,日期,分成,展现" mailid="unionrd" name="SP用户每日分成监控" error="监控每个分成超过1000元的用户，如果分成的波动率超过30%，则报警" bdid="computedb" id="28">
+		<tns:sql>
+			<![CDATA[
+				select customerid,cid,prodid,countdate,divide,CONSUMETIMES+SPGUIDE as viewtimes from dayspsttt where countdate>#fourdaysago order by customerid,cid,prodid,countdate;
+			]]>
+		</tns:sql>
+		<tns:sequencekey>customerid,cid,prodid</tns:sequencekey>
+		<tns:sequencevalue>divide</tns:sequencevalue>
+		<tns:followvalue>viewtimes</tns:followvalue>
+		<!-- 比较两天的数据，超过1000，并且变化率超过30%的报警 -->
+		<tns:sequencetype>1</tns:sequencetype>
+	</tns:SequencedbCheck>
+	<tns:SequencedbCheck shownames="任务id,任务名称,业务日期,命令脚本,返回值,最后调度时间" mailid="unionrd" name="DataHunter任务调度失败处理情况监控" error="失败未处理时间超过1天且小于7天的任务列表,超过7天未处理的视为不用处理" bdid="computedb" id="31">
+		<tns:sql>
+			<![CDATA[SELECT t.id,t.name,td.bizDate,td.command,td.returnValue,td.beginTime FROM taskdaily td JOIN task t on td.taskId=t.id WHERE DATEDIFF(NOW(),td.beginTime) BETWEEN 1 AND 70 AND state!=3]]>
+		</tns:sql>
+		<tns:sequencetype>0</tns:sequencetype>
+	</tns:SequencedbCheck>
+	<tns:SequencedbCheck shownames="名称,描述,业务日期,URL,最近下载时间" mailid="unionrd" name="DataHunter上游数据缺失情况监控" error="数据延迟超过1天且小于32天的数据列表,超过32天未处理的视为不用处理" bdid="computedb" id="31.1">
+		<tns:sql>
+			<![CDATA[SELECT dd.`name`,d.description,dd.bizDate,dd.url,dd.modifyTime FROM datadaily dd JOIN `data` d ON dd.name=d.name WHERE DATEDIFF(NOW(),dd.createTime) BETWEEN 1 AND 32 AND state>1]]>
+		</tns:sql>
+		<tns:sequencetype>0</tns:sequencetype>
+	</tns:SequencedbCheck>
+
+	<!-- 多表对比功能验证 -->
+	<tns:ComplexDbCheck mailid="unionrd" checkconditionclass="com.union.check.checker.snapcond.TuIncomeSumCheck" name="用户收入数据汇总小于代码位维度收入数据汇总" bdid="computedb" id="29"
+						error="计费名媒体维度分成低于代码位维度的分成汇总" shownames="用户id,计费名id,媒体id,分成收入汇总,代码位收入汇总,差额,差额比例">
+		<tns:sql>
+			<![CDATA[
+				select customerid,cid,tcm,sum(divide) as divide from daydomaindividesttt where countdate=DATE_FORMAT(DATE_SUB( curdate( ) , INTERVAL 1 DAY ),'%Y%m%d') group by customerid,cid,cname,tcm; 
+			]]>
+		</tns:sql>
+		<tns:sql>
+			<![CDATA[
+				select customerid,cid,tcm,sum(divide) as divide from daycprotutmdspsttt where countdate=DATE_FORMAT(DATE_SUB( curdate( ) , INTERVAL 1 DAY ),'%Y%m%d') group by customerid,cid,cname,tcm;
+			]]>
+		</tns:sql>
+	</tns:ComplexDbCheck>
+	<tns:ComplexDbCheck mailid="unionrd" checkconditionclass="com.union.check.checker.snapcond.TuIncomeSumCheck" name="APP用户收入数据汇总小于代码位维度收入数据汇总" bdid="computedb" id="29.1"
+						error="计费名媒体维度分成低于代码位维度的分成汇总" shownames="用户id,计费名id,媒体id,分成收入汇总,代码位收入汇总,差额,差额比例">
+		<tns:sql>
+			<![CDATA[
+				select customerid,cid,tcm,sum(usercpmdivide+usercpcdivide) as divide from dayappdividesttt where countdate=DATE_FORMAT(DATE_SUB( curdate( ) , INTERVAL 1 DAY ),'%Y%m%d') group by customerid,cid,tcm;
+			]]>
+		</tns:sql>
+		<tns:sql>
+			<![CDATA[
+				select customerid,cid,tcm,sum(usercpmdivide+usercpcdivide) as divide from dayapptutmdspsttt where countdate=DATE_FORMAT(DATE_SUB( curdate( ) , INTERVAL 1 DAY ),'%Y%m%d') group by customerid,cid,tcm;
+			]]>
+		</tns:sql>
+	</tns:ComplexDbCheck>
+
+	<tns:FileCheck cron="* * * * * ?" mailid="unionrd" name="检查网盟分组统计报表日报是否生成" ftpid="ftp" id="42"
+				   error="无法生成日报" shownames="Target Dir,File Name"
+				   dir="/home/work/datainf/data/union/export/report/pv/{{yyyyMM --date '-1 day'}}"
+				   minsize="10000">
+		<tns:file>
+			<![CDATA[
+                   搜索业务全部  -ucrm_day_{{yyyyMMdd --date '-1 day'}}.csv
+                ]]>
+		</tns:file>
+	</tns:FileCheck>
+
+	<tns:FileCheck cron="* * * ? * MON" mailid="unionrd" name="检查网盟分组统计报表周报是否生成" ftpid="ftp" id="43"
+				   error="无法生成周报" shownames="Target Dir,File Name"
+				   dir="/home/work/datainf/data/union/export/report/pv/{{yyyyMM --date '-1 day'}}"
+				   minsize="10000">
+		<tns:file>
+			<![CDATA[
+                   搜索业务全部  -ucrm_week_{{yyyyMMdd --date '-1 week'}}-{{yyyyMMdd --date '-1 day'}}.csv,
+                   主体推广（联盟总体）_week_{{yyyyMMdd --date '-1 week'}}-{{yyyyMMdd --date '-1 day'}}.csv
+                ]]>
+		</tns:file>
+	</tns:FileCheck>
+
+	<tns:FileCheck cron="* * * 1 * ?" mailid="unionrd" name="检查网盟分组统计报表月报是否生成" ftpid="ftp" id="44"
+				   error="无法生成月报" shownames="Target Dir,File Name"
+				   dir="/home/work/datainf/data/union/export/report/pv/{{yyyyMM --date '-1 day'}}"
+				   minsize="1000">
+		<tns:file>
+			<![CDATA[
+                   搜索业务全部  -ucrm_month_{{yyyyMMdd --date '-1 month'}}-{{yyyyMMdd --date '-1 day'}}.csv,
+                   主题推广（联盟总体）_month_{{yyyyMMdd --date '-1 month'}}-{{yyyyMMdd --date '-1 day'}}.csv,
+                   搜索业务（联盟asp合作，不含微软）_month_{{yyyyMMdd --date '-1 month'}}-{{yyyyMMdd --date '-1 day'}}.csv,
+                   主体推广（联盟总体）_month_{{yyyyMMdd --date '-1 month'}}-{{yyyyMMdd --date '-1 day}}.csv
+                ]]>
+		</tns:file>
+	</tns:FileCheck>
+
+	<tns:BasicdbCheck name="检查各行业类型是否都设置了分成比例" bdid="computedb" id="45.1" mailid="unionrd" error="行业大类编号,二级分类编号,二级行业名称" shownames="缺失分成比例的行业信息">
+		<tns:sql>
+			<![CDATA[
+				select t.PARENTID,t.BEIDOUTYPEID,t.`NAME` 
+				from beidoutype t left join zhiyingdividerule zz 
+				on t.BEIDOUTYPEID = zz.SUBID and t.PARENTID = zz.ROOTID
+				where zz.RULEID is null and t.PARENTID <> -1;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+</tns:nodes>

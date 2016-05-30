@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tns:nodes xmlns:tns="http://www.example.org/bizmonitor"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.example.org/bizmonitor ./bizmonitor.xsd ">
+	<tns:DbPort url="jdbc:mysql://cp01-rd-union003.cp01.baidu.com:8910/union4"
+		name="union" password="uniondb123" id="computedb" />
+	<tns:Mail address="yaoli@baidu.com" id="unionrd" />
+
+	<!-- 基础功能验证 -->
+	<tns:BasicdbCheck name="网盟分成波动数据" bdid="computedb" id="1"
+		mailid="unionrd" error="" shownames="日期,数量,展现量,点击,收入,分成">
+		<tns:sql>
+			<![CDATA[
+				select countdate,count(*),sum(viewtimes),sum(click),sum(income),sum(divide) 
+				from daydomaindividesttt
+				where countdate > date_format( date_add(now(), interval -32 day),'%Y%m%d')
+				group by countdate;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="APP分成波动数据" bdid="computedb"
+		id="2" mailid="unionrd" error="" shownames="日期,数量,展现量,点击,CPC收入,CPM收入,用户CPC分成,用户CPM分成,渠道CPC收入,渠道CPM收入">
+		<tns:sql>
+			<![CDATA[
+				select countdate,count(*),sum(viewtimes),sum(click),sum(cpcincome),sum(cpmincome),sum(usercpcdivide),sum(usercpmdivide),sum(chcpcdivide),sum(chcpmdivide) from dayappdividesttt
+				where countdate > date_format( date_add(now(), interval -32 day),'%Y%m%d')
+				group by countdate;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="搜索分成波动数据" bdid="computedb" id="2"
+		mailid="unionrd" error="" shownames="日期,数量,访问量,展现量,点击,收入,修正后收入,分成">
+		<tns:sql>
+			<![CDATA[
+				select countdate,count(*),sum(visit),sum(viewtimes),sum(click),sum(income),sum(adjustincome),sum(divide) from daysearchsttt
+				where countdate > date_format( date_add(now(), interval -32 day),'%Y%m%d')
+				group by countdate;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="软件分成波动数据" bdid="computedb" id="2"
+		mailid="unionrd" error="" shownames="日期,数量,安装量,访问量,展现量,点击,收入,修正后收入,分成">
+		<tns:sql>
+			<![CDATA[
+				select countdate,count(*),sum(install),sum(visit),sum(viewtimes),sum(click),sum(income),sum(adjustincome),sum(divide) from daysoftwaresttt
+				where countdate > date_format( date_add(now(), interval -32 day),'%Y%m%d')
+				group by countdate;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="搜索分渠道分成波动数据" bdid="computedb"
+		id="2" mailid="unionrd" error="" shownames="日期,数量,访问量,展现量,点击,收入,修正后收入,分成">
+		<tns:sql>
+			<![CDATA[
+				select countdate,count(*),sum(visit),sum(viewtimes),sum(click),sum(income),sum(adjustincome),sum(divide) from daychannelsearchsttt
+				where countdate > date_format( date_add(now(), interval -32 day),'%Y%m%d')
+				group by countdate;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="团购分成波动数据" bdid="computedb" id="2"
+		mailid="unionrd" error="" shownames="日期,数量,消费次数,收入,分成">
+		<tns:sql>
+			<![CDATA[
+				select countdate,count(*),sum(consumetimes),sum(income),sum(divide) 
+				from daytuansttt
+				where countdate > date_format( date_add(now(), interval -32 day),'%Y%m%d')
+				group by countdate;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+	<tns:BasicdbCheck name="DAN分成波动数据" bdid="computedb"
+		id="2" mailid="unionrd" error="" shownames="日期,数量,展现量,请求量,修正前期请求量,分成">
+		<tns:sql>
+			<![CDATA[
+				select countdate,count(*),sum(viewtimes),sum(REQUESTTIMES),sum(VIEWTIMESBEFORE),sum(divide) 
+				from daydansttt 
+				where countdate > date_format( date_add(now(), interval -32 day),'%Y%m%d')
+				group by countdate;
+			]]>
+		</tns:sql>
+	</tns:BasicdbCheck>
+</tns:nodes>

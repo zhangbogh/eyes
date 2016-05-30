@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.example.org/bizmonitor"
+        xmlns:tns="http://www.example.org/bizmonitor" elementFormDefault="qualified">
+    <element name="nodes">
+        <complexType>
+            <choice minOccurs="0" maxOccurs="unbounded">
+                <element ref="tns:BasicdbCheck"/>
+                <element ref="tns:SnapdbCheck"/>
+                <element ref="tns:DbPort"/>
+                <element ref="tns:FtpConn"/>
+                <element ref="tns:Mail"/>
+                <element ref="tns:SequencedbCheck"/>
+                <element ref="tns:FileCheck"/>
+                <element ref="tns:ComplexDbCheck"/>
+            </choice>
+        </complexType>
+    </element>
+
+    <complexType name="basenode">
+        <attribute name="id" type="string" use="required"/>
+        <attribute name="name" type="string" use="required"/>
+        <attribute name="mailid" type="string" use="required"/>
+        <attribute name="shownames" type="string" use="required"/>
+        <attribute name="error" type="string" use="required"/>
+    </complexType>
+
+    <element name="DbPort">
+        <complexType>
+            <attribute name="id" type="string" use="required"/>
+            <attribute name="url" type="string" use="required"/>
+            <attribute name="name" type="string" use="required"/>
+            <attribute name="password" type="string" use="required"/>
+        </complexType>
+    </element>
+
+    <element name="FtpConn">
+        <complexType>
+            <attribute name="id" type="string" use="required"/>
+            <attribute name="host" type="string" use="required"/>
+            <attribute name="port" type="string" use="optional"/>
+            <attribute name="name" type="string" use="required"/>
+            <attribute name="password" type="string" use="required"/>
+        </complexType>
+    </element>
+
+    <element name="Mail">
+        <complexType>
+            <attribute name="id" type="string" use="required"/>
+            <attribute name="address" type="string" use="required"/>
+        </complexType>
+    </element>
+
+    <element name="BasicdbCheck">
+        <complexType>
+            <complexContent>
+                <extension base="tns:basenode">
+                    <sequence>
+                        <element name="sql" type="string" minOccurs="0" maxOccurs="1"/>
+                    </sequence>
+                    <attribute name="bdid" type="string" use="required"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="SnapdbCheck">
+        <complexType>
+            <complexContent>
+                <extension base="tns:basenode">
+                    <sequence>
+                        <element name="sql" type="string" minOccurs="0" maxOccurs="1"/>
+                    </sequence>
+                    <attribute name="bdid" type="string" use="required"/>
+                    <attribute name="filepath" type="string" use="required"/>
+                    <attribute name="checkconditionclass" type="string" use="required"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="FileCheck">
+        <complexType>
+            <complexContent>
+                <extension base="tns:basenode">
+                    <sequence>
+                        <element name="file" type="string" minOccurs="0" maxOccurs="unbounded"/>
+                    </sequence>
+                    <attribute name="dir" type="string" use="required"/>
+                    <attribute name="cron" type="string" use="required"/>
+                    <attribute name="ftpid" type="string" use="required"/>
+                    <attribute name="minsize" type="int" use="optional"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="SequencedbCheck">
+        <complexType>
+            <complexContent>
+                <extension base="tns:basenode">
+                    <sequence>
+                        <element name="sql" type="string" minOccurs="0" maxOccurs="1"/>
+                        <element name="sequencekey" type="string" minOccurs="0" maxOccurs="1"/>
+                        <element name="sequencevalue" type="string" minOccurs="0" maxOccurs="1"/>
+                        <element name="followvalue" type="string" minOccurs="0" maxOccurs="1"/>
+                        <element name="sequencetype" type="int" minOccurs="0" maxOccurs="1"/>
+                    </sequence>
+                    <attribute name="bdid" type="string" use="required"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="ComplexDbCheck">
+        <complexType>
+            <complexContent>
+                <extension base="tns:basenode">
+                    <sequence>
+                        <element name="sql" type="string" minOccurs="0" maxOccurs="unbounded"/>
+                    </sequence>
+                    <attribute name="bdid" type="string" use="required"/>
+                    <attribute name="checkconditionclass" type="string" use="required"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+</schema>

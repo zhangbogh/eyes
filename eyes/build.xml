@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." default="dist" name="kaimu">
+
+	<property environment="env" />
+	<property name="project.name" value="kaimu" />
+	<property name="classes.dir" value="bin" />
+	<property name="dist.dir" value="kaimu" />
+	<property name="src.dir" value="src" />
+
+	<target name="clean">
+		<delete dir="${dist.dir}" />
+	</target>
+
+	<path id="external.jars">
+		<fileset dir="./lib" includes="**/*.jar" />
+	</path>
+
+	<pathconvert property="extjars" refid="external.jars" />
+
+	<path id="project.classpath">
+		<pathelement location="${src.dir}" />
+		<path refid="external.jars" />
+	</path>
+
+	<target name="compile">
+		<mkdir dir="${classes.dir}" />
+		<javac srcdir="${src.dir}" destdir="${classes.dir}" includeAntRuntime="false" classpathref="project.classpath" debug="true">
+			<compilerarg line="-encoding UTF-8" />
+		</javac>
+		<copy file="${src.dir}/logback.xml" todir="${classes.dir}" />
+	</target>
+
+	<target name="init" depends="compile">
+		<delete dir="${dist.dir}" />
+		<copy todir="${dist.dir}/logs">
+			<fileset dir="logs" />
+		</copy>
+		<copy todir="${dist.dir}/output">
+			<fileset dir="output" />
+		</copy>		
+		<copy todir="${dist.dir}/input">
+			<fileset dir="input" />
+		</copy>
+		<copy todir="${dist.dir}/lib">
+			<fileset dir="lib" />
+		</copy>
+		<copy todir="${dist.dir}/">
+			<fileset dir="shell" />
+		</copy>
+	</target>
+
+	<target name="dist" depends="init">
+		<jar jarfile="${dist.dir}/kaimu.jar" basedir="${classes.dir}" includes="**/*.*">
+			<manifest>
+				<attribute name="Main-class" value="com.union.check.engine.CheckEngine" />
+				<attribute name="Class-path" value="lib/c3p0-0.9.2.1.jar lib/guava-14.0.1.jar lib/jodd-3.5.1.jar lib/junit-4.11.jar lib/logback-classic-1.0.13.jar lib/logback-core-1.0.13.jar lib/mail.jar lib/mchange-commons-java-0.2.3.4.jar lib/mysql-connector-java-5.1.26-bin.jar lib/slf4j-api-1.7.5.jar lib/commons-exec-1.0.jar lib/commons-net-3.3.jar lib/quartz-2.2.2.jar" />
+			</manifest>
+		</jar>
+	</target>
+
+</project>
