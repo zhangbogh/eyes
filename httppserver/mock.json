@@ -1,0 +1,33 @@
+req:
+/aps/wallettrancheck
+rsp:
+{
+	name:zhangbo,
+	age:10,
+	test:#data.$.test#
+}
+----------
+req:
+/aps/operate
+rsp:
+{
+	name:zhangbo,
+	age:10
+}
+----------
+req:
+/aps/queryprecredit
+rsp:
+{
+	name:zhangbo,
+	age:10
+}
+----------
+req:
+/customerService/queryApplyHistory
+rsp:
+{
+	name:zhangbo,
+	age:10
+}
+----------
