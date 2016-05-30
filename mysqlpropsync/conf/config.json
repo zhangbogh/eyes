@@ -1,0 +1,16 @@
+{
+	codetpl:"public final static int #1 = #2;",
+	classname:"com.baidu.syncpara.gen.SyncParasKey",
+	tablename:"syncparas",
+	dbsrc:{
+		url:"jdbc:mysql://localhost/test",
+		port:3306,
+		user:"root",
+		password:"811231"
+	},
+	
+	redispool:{
+		ip:"127.0.0.1",
+		port:6379,
+	}
+}
