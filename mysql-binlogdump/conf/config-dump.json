@@ -1,0 +1,24 @@
+{
+	"src":{
+		"ip":"127.0.0.1",
+		"url":"jdbc:mysql://localhost/test",
+		"port":3306,
+		"user":"root",
+		"password":"811231"
+	},
+	
+	dumpctrl:{
+		"time":10,
+		"maxrecord":10000,
+		"fileprefix":"test",
+		"binlogfile":"mysql-bin.000001",
+		"binlogpos":411
+	},
+	
+	"tabledumps":[{
+		"tablename":"testbinlog",
+		"tableno":1,
+		"idfieldno":0,
+		"dumpsql":"select id,name,age from testbinlog where id={}"
+	}]
+}

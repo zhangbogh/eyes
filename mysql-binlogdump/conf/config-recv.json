@@ -1,0 +1,22 @@
+{
+	"dest":{
+		"ip":"127.0.0.1",
+		"url":"jdbc:mysql://localhost/test",
+		"port":3306,
+		"user":"root",
+		"password":"811231"
+	},
+	
+	recvctrl:{
+		"time":10,
+		"filedir":"./data/"
+	},
+	
+	"tablerecvs":[{
+		"tablename":"testbinlog",
+		"tableno":1,
+		"insertsql":["insert into testbinlogrecv (id,name) values (#2,'#3')"],
+		"updatesql":["update testbinlogrecv set name='#3' where id='#2'"],
+		"deletesql":["delete from testbinlogrecv where id=#2"]
+	}]
+}
